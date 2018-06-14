@@ -1,20 +1,24 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const fs = require('fs');
-
 const bodyParser = require('body-parser');
-const http = require('http');
-const server = http.createServer(app);
+var compression = require('compression');
 const io = require('socket.io')(server);
 
-console.log(path.join(`${__dirname}`, `../public`));
-app.use(express.static(path.join(`${__dirname}`, `../public`)));
+const PORT = process.env.PORT || 3000;
+const PUBLIC_DIR = process.cwd() + '/public';
 
-app.set('port', process.env.PORT || 3000);
-
-app.use(bodyParser.json());
+app.use(compression());
+app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({ extended: true }));
+
+if (process.env.NODE_ENV === 'production') {
+    app.enable('trust proxy');
+    app.use((req, res, next) => {
+        if (req.secure) next();
+        else res.redirect('https://' + req.headers.host + req.url);
+    });
+}
 
 var HandlerModule = require('./handler/handler');
 var serverAPI = require('../src/routes/api');
@@ -22,10 +26,17 @@ var serverAPI = require('../src/routes/api');
 let handler = new HandlerModule(io);
 app.use('/api', serverAPI(handler));
 
+app.use(express.static(PUBLIC_DIR));
 app.get('/*', (req, res) => {
-    res.sendFile(path.join(`${__dirname}`, `../public/index.html`));
-});
+    res.sendFile(path.join(`${PUBLIC_DIR}`, `/index.html`), (err) => {
+        if (err) {
+          res.status(500).send(err)
+        }
+    })
+})
 
-server.listen(app.get('port'), () => {
-    console.log('App is listening on port ' + app.get('port'));
+var server = app.listen(PORT, function() {
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log('App listening at port:' + port);
 });

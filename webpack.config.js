@@ -44,7 +44,6 @@ module.exports = {
         exclude: /node_modules/,
         query: {
           cacheDirectory: true,
-          presets: ["react", "es2015"],
           plugins: ["transform-class-properties"]
         }
       },
@@ -73,7 +72,7 @@ module.exports = {
         loader: "url-loader?limit=100000"
       },
       {
-        test: /\.(jpe?g|gif|svg)$/,
+        test: /\.(jpe?g|gif)$/,
         include: SRC,
         loader: "file-loader",
         options: {
